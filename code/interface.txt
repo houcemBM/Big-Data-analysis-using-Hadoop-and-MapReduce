@@ -1,0 +1,129 @@
+Java code for graphic user interface
+//execHadoop.java
+import java.io.BufferedReader;
+import java.io.InputStreamReader;
+public class execHadoop {
+public String executeCommand(String command) {
+StringBuffer output = new StringBuffer();
+Process p;
+try {
+//String command = "ping -c 3 http://www.google.com";
+p = Runtime.getRuntime().exec(command);
+p.waitFor();
+BufferedReader reader =
+New BufferedReader(new
+InputStreamReader(p.getInputStream()));
+String line = "";
+while ((line = reader.readLine())!= null) {
+output.append(line + "\n");
+}
+} catch (Exception e) {
+e.printStackTrace();
+}
+return output.toString();
+}
+}
+//mainpage.java
+import java.awt.BorderLayout;
+import java.awt.Dimension;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.util.Random;
+import javax.swing.*;
+/**
+@author RohitAkshay
+*/
+public class mainPage {
+JFrame jfrm;
+JPanel resultPanel,inputLogPanel,analyzePanel;
+JButton browseBtn;
+JButton jbtn;
+JButton uploadButton;
+JTextField pathbox;
+JLabel resultText;
+int outputNo=0;
+void createGui(){
+jfrm =new JFrame("Big Data Analysis-Store Logs");
+jfrm.setSize(900,800);
+jfrm.setLayout(new BorderLayout());
+jfrm.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+pathbox=new JTextField();
+resultPanel=new JPanel();
+inputLogPanel=new JPanel();
+browseBtn=new JButton("Browse");
+inputLogPanel.add(browseBtn);
+pathbox.setPreferredSize(new Dimension(300,30));
+inputLogPanel.add(pathbox);
+jbtn=new JButton("Analyze");
+analyzePanel=new JPanel();
+analyzePanel.add(jbtn);
+uploadButton=new JButton("Upload");
+analyzePanel.add(uploadButton);
+resultText=new JLabel("Result is here");
+resultText.setPreferredSize(new Dimension(300,200));
+resultPanel.add(resultText);
+jfrm.add(BorderLayout.NORTH,inputLogPanel);
+jfrm.add(BorderLayout.CENTER,analyzePanel);
+jfrm.add(BorderLayout.SOUTH,resultPanel);
+jfrm.setVisible(true);
+browseBtn.addActionListener(new ActionListener() {
+@Override
+public void actionPerformed(ActionEvent e) {
+// TODO Auto-generated method stub
+JFileChooser fileDialog=new JFileChooser("Select Input Log");
+int returnVal = fileDialog.showOpenDialog(jfrm);
+if (returnVal == JFileChooser.APPROVE_OPTION) {
+java.io.File file = fileDialog.getSelectedFile();
+pathbox.setText(file.getPath());
+}
+}
+});
+uploadButton.addActionListener(new ActionListener() {
+@Override
+public void actionPerformed(ActionEvent e) {
+// TODO Auto-generated method stub
+//resultText.setContentType("text/plain");
+try{
+resultText.setText("Uploading"+pathbox.getText()+" please wait...");
+execHadoop eh=new execHadoop();
+String retStr=eh.executeCommand("hadoop fs -rm -r inputdir/*");
+String command = "hadoop fs -put "+pathbox.getText()+" inputdir";
+retStr=eh.executeCommand(command);
+resultText.setText("Upload Complete...");
+System.out.println(retStr);
+}
+catch(Exception et){
+resultText.setText("error has occured"+et.getMessage());
+}
+}
+});
+jbtn.addActionListener(new ActionListener() {
+@Override
+public void actionPerformed(ActionEvent e) {
+// TODO Auto-generated method stub
+Random rn=new Random();
+outputNo=rn.nextInt(1000);
+execHadoop eh=new execHadoop();
+//String retStr=eh.executeCommand("hadoop fs -rm -r outputdir");
+//String command = "hadoop jar /usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.1.jar -mapper /home/training/workspace/hadoopprk/bin/mapper.py -reducer
+/home/training/workspace/hadoopprk/bin/reducer.py -file mapper.py -file reducer.py -input inputdir -output outputdir"+outputNo;
+String command = "hadoop jar /usr/lib/hadoop-0.20-mapreduce/contrib/streaming/hadoop-streaming-2.0.0-mr1-cdh4.1.1.jar -mapper mapper.py -reducer reducer.py -file mapper.py -file reducer.py -input inputdir -output outputdir"+outputNo;
+String retStr=eh.executeCommand(command);
+command="hadoop fs -cat outputdir"+outputNo+"/part-00000";
+retStr=eh.executeCommand(command);
+resultText.setText(retStr);
+}
+});
+}
+mainPage(){
+createGui();
+}
+public static void main(String[] args) {
+// TODO Auto-generated method stub
+SwingUtilities.invokeLater(new Runnable(){
+public void run(){
+new mainPage();
+}
+});
+}
+}
